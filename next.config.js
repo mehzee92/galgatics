@@ -1,14 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  i18n: {
-    locales: ["en"],
-    defaultLocale: "en",
-  },
+  output: 'standalone',
+  "trailingSlash": true,
+  exportPathMap: async function (defaultPathMap, { dev, dir, outDir, distDir, buildId}) 
+  {
+    return {
+    '/': { page: '/' },
+    '/shop': { page: '/shop' },
+    '/the-rock': { page: '/the-rock' }
+  }
+}, 
+
+eslint: {
+  ignoreDuringBuilds: true,
+}, 
+
   reactStrictMode: false,
   swcMinify: true,
-  eslint: { ignoreDuringBuilds: true, }
 };
 
 module.exports = nextConfig;
-
-

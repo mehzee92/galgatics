@@ -47,8 +47,10 @@ export default function Page(props) {
         }
         catch(error)
         {
-          let err = error.reason;
-          err = err.replace("execution reverted", "");
+          console.log(error);
+          let err = error.message;
+          err = err.replace("execution reverted:", "");
+          err = err.substring(0, 50);
           setError(err);
         }
      }
