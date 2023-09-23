@@ -1,18 +1,16 @@
 "use client"
 
 import {useState, useEffect} from 'react';
-import {useAccount, useConnect, useDisconnect} from 'wagmi';
+import {useAccount, useConnect} from 'wagmi';
 import { ethers } from 'ethers';
-import { useSigner } from 'wagmi'
-import { nftAddress, rpcUrl, nftPrice } from "../components/data";
+import { nftAddress, rpcUrl, nftPrice, NFTABI } from "../components/data";
+import { useContractWrite, usePrepareContractWrite } from 'wagmi'
 
 export default function Page(props) {
 
-  const { data: signer } = useSigner();
   const[price, setPrice] = useState(nftPrice);
   const[nos, setNos] = useState(0);
   const[totalPrice, setTotalPrice] = useState(0);
-  const[error, setError] = useState("  ");
   const[totalSupply, setTotalSupply] = useState(0);
 
   const { address, isConnected } = useAccount();
@@ -33,32 +31,19 @@ export default function Page(props) {
 
 
 
-  const mintNft = async() => 
+  const { config } = usePrepareContractWrite({
+    address: nftAddress,
+    abi: NFTABI,
+    functionName: 'mintPublic'
+  })  
+
+  const { data, isLoading, isSuccess, write } = useContractWrite(config)
+
+  const mintNft = () => 
   {
-      if(isConnected)
-      {
-        const ABI = ["function mint(uint256 _numToMint) public payable"];
-        let amountInWei = ethers.utils.parseUnits(totalPrice.toString(), "ether");
-        const writeContract = new ethers.Contract(nftAddress, ABI, signer);
-        try
-        {
-          const txResponse = await writeContract.mint(nos, {value:amountInWei});
-          const receipt = await txResponse.wait();
-        }
-        catch(error)
-        {
-          console.log(error);
-          let err = error.message;
-          err = err.replace("execution reverted:", "");
-          err = err.substring(0, 50);
-          setError(err);
-        }
-     }
-     else
-     {
-       setError("Connect to Wallet");
-       setTimeout(()=> { setError(""); }, 3000);
-     }
+     let amountInWei = ethers.utils.parseUnits(totalPrice.toString(), "ether");
+     alert(amountInWei);
+     write?.({nos, value: amountInWei});
   }
 
 
@@ -91,20 +76,6 @@ export default function Page(props) {
                   backgroundColor:"transparent"                  
                 };
 
-if(!isConnected)
-{
-  return(
-    <div className="text-center flex w-full items-center justify-center py-24">
-    <div className="w-full relative">
-      <h2 className="text-xl sm:text-5xl text-white mb-12">GALACTIC NFT MINTING</h2>
-      <h3 className="text-xl sm:text-xl text-red-500 mb-12">Please connect your wallet</h3> 
-    </div>
-    </div>
-  );
-}
-
-
-
   return(
       <div className="text-center flex w-full items-center justify-center py-24">
       <div className="w-full relative">
@@ -134,7 +105,7 @@ if(!isConnected)
           <br />
           <p className='text-slate-400'>Price <span className='text-yellow-400'>{totalPrice}</span> Eth</p>
           <p className='text-red-500'>{error}</p>
-          <button style={{minWidth:"200px", marginTop:"20px"}} onClick={mintNft} className="btncto">MINT</button>
+          <button style={{minWidth:"200px", marginTop:"20px"}} disabled={!write} onClick={mintNft} className="btncto">MINT</button>
         </div>
 
 
