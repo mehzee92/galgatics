@@ -3,18 +3,15 @@
 import {useState, useEffect} from 'react';
 import {useAccount, useConnect, useDisconnect} from 'wagmi';
 import { ethers } from 'ethers';
-import { useSigner } from 'wagmi'
-import { tokenAddress, rpcUrl } from "../components/data";
+import { useContractWrite, usePrepareContractWrite } from 'wagmi'
 
-export default function Page(props) {
+import { tokenAddress, rpcUrl, CONTRACTABI } from "../components/data";
 
-  const { data: signer } = useSigner();
-  const[error, setError] = useState("  ");
+export default function Page(props) 
+{
+
   const[balance, setBalance] = useState(0);
-
-  const { address, isConnected } = useAccount();
-  
-
+  const { address, isConnected } = useAccount();  
   const provider = new ethers.providers.JsonRpcProvider(rpcUrl);   
 
   const getBalance = async()=> {
@@ -29,54 +26,22 @@ export default function Page(props) {
   useEffect(()=> {  if(isConnected) { getBalance(); }}, []);
 
 
-  const claimAirdrops = async() => 
-  {
-      if(isConnected)
-      {
-        const ABI = ["function claimAirdrop() external  returns (bool)"];
-        const writeContract = new ethers.Contract(tokenAddress, ABI, signer);
-        try
-        {
-          const txResponse = await writeContract.claimAirdrop();
-          const receipt = await txResponse.wait();
-        }
-        catch(error)
-        {
-          let err = error.reason;
-          err = err.replace("execution reverted:", "");
-          err = err.substring(0, 50);
-          setError(err);
-        }
-     }
-     else
-     {
-       setError("Connect to Wallet");
-     }
-  }
+  const { config } = usePrepareContractWrite({ 
+                                                address:tokenAddress, 
+                                                abi:CONTRACTABI, 
+                                                functionName:'claimAirdrop'
+                                              });
 
-  if(!isConnected)
-  {
-    return(
-      <div className="text-center flex w-full items-center justify-center py-24">
-      <div className="w-full relative">
-        <h2 className="text-xl sm:text-5xl text-white mb-12">CLAIM AIRDROPS</h2>
-        <h3 className="text-xl sm:text-xl text-red-500 mb-12">Please connect your wallet</h3> 
-      </div>
-      </div>
-    );
-  }  
+  const { data, isLoading, isSuccess, write } = useContractWrite(config)
 
   return(
       <div className="text-center flex w-full items-center justify-center py-24">
-      <div className="w-full relative">
-          
-          <h2 className="text-xl sm:text-5xl text-white mb-12">CLAIM AIRDROPS</h2> 
-
-          <p className='text-stone-300'>Your Balance: <span className='text-amber-200'>{balance}</span> GALACTIC</p>
-
-          <p className='text-red-500'>{error}</p>
-          <button style={{minWidth:"200px", marginTop:"20px"}} onClick={claimAirdrops} className="btncto">Claim Airdrops</button>
-      </div>
+        <div className="w-full relative">
+            <h2 className="text-xl sm:text-5xl text-white mb-12">CLAIM AIRDROPS</h2> 
+            <p className='text-stone-300'>Your Balance: <span className='text-amber-200'>{balance}</span> GALACTIC</p>
+            <button style={{minWidth:"200px", marginTop:"20px"}} 
+            disabled={!write} onClick={() => write?.()} className="btncto">Claim Airdrops</button>
+        </div>
     </div>
   )
 }
